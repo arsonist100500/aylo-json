@@ -16,3 +16,12 @@ please use your own initiative to deal with these issues, it’s part of the tes
 Please ensure all code is tested before sending it back, it would be good to also see unit tests too.
 The code base should be provided as a zip package or git repository url.
 Ideally, the application must be deployable using Docker, otherwise we cannot guarantee the successful run of the application.
+
+# Install & run
+
+```
+docker-compose down
+docker volume create --name=postgres-aylo
+docker-compose run --rm php composer install
+docker-compose up -d
+```

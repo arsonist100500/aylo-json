@@ -1,9 +1,43 @@
-version: '2'
+version: '3.9'
+
 services:
   php:
     image: yiisoftware/yii2-php:7.4-apache
+    container_name: aylo_php
+    restart: on-failure
     volumes:
       - ~/.composer-docker/cache:/root/.composer/cache:delegated
       - ./:/app:delegated
+    networks:
+      default:
+        ipv4_address: 172.21.0.3
     ports:
       - '8000:80'
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:13-alpine
+    container_name: aylo_pgsql
+    restart: on-failure
+    volumes:
+      - postgres-aylo:/var/lib/postgresql/data:delegated
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: aylo
+    networks:
+      default:
+        ipv4_address: 172.21.0.2
+
+networks:
+  default:
+    driver: bridge
+    name: aylo
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+
+volumes:
+  postgres-aylo:
+    external: true
