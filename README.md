@@ -25,3 +25,7 @@ docker volume create --name=postgres-aylo
 docker-compose run --rm php composer install
 docker-compose up -d
 ```
+
+# Usage
+
+App is available on local port 8000: [http://localhost:8000/](http://localhost:8000/).
