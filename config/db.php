@@ -1,14 +1,16 @@
 <?php
 
 return [
-    'class' => 'yii\db\Connection',
-    'dsn' => 'mysql:host=localhost;dbname=yii2basic',
-    'username' => 'root',
-    'password' => '',
-    'charset' => 'utf8',
+    'class' => yii\db\Connection::class,
+    'dsn' => 'pgsql:' .
+        'host=' . '172.21.0.2' . ';' .
+        'dbname=' . 'aylo',
+    'username' => 'postgres',
+    'password' => 'postgres',
 
-    // Schema cache options (for production environment)
-    //'enableSchemaCache' => true,
-    //'schemaCacheDuration' => 60,
-    //'schemaCache' => 'cache',
+    'enableSchemaCache' => true,
+    'charset' => 'utf8',
+    'attributes' => [
+        PDO::ATTR_PERSISTENT => true,
+    ]
 ];
