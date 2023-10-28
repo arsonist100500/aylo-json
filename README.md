@@ -23,6 +23,7 @@ Ideally, the application must be deployable using Docker, otherwise we cannot gu
 docker-compose down
 docker volume create --name=postgres-aylo
 docker-compose run --rm php composer install
+docker-compose run --rm php /app/yii migrate --interactive=0
 docker-compose up -d
 ```
 
