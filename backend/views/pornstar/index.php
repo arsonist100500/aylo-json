@@ -5,9 +5,9 @@
  * @var $dataProvider yii\data\ActiveDataProvider
  */
 
-use yii\helpers\Html;
 use yii\grid\GridView;
 use yii\grid\ActionColumn;
+use yii\helpers\Html;
 
 $this->title = 'Pornstars';
 $this->params['breadcrumbs'][] = $this->title;

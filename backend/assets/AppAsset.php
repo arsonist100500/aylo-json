@@ -8,7 +8,7 @@
 namespace backend\assets;
 
 use rmrevin\yii\fontawesome\NpmFreeAssetBundle;
-use yii\bootstrap5\BootstrapAsset;
+use yii\bootstrap\BootstrapAsset;
 use yii\web\AssetBundle;
 use yii\web\YiiAsset;
 
