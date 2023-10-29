@@ -3,6 +3,7 @@
 namespace console\jobs\import;
 
 use common\models\feed\FeedParser;
+use common\models\feed\item\ItemDto;
 use common\models\FileSystemStorage;
 use common\models\StorageInterface;
 use JsonException;
@@ -17,6 +18,8 @@ class FeedImportJob implements JobInterface
 {
     /** @var string */
     public string $path;
+    /** @var int */
+    public int $batchSize = 50;
     /** @var string */
     public string $storage = FileSystemStorage::class;
     /** @var string|array|Queue */
@@ -30,16 +33,50 @@ class FeedImportJob implements JobInterface
     public function execute($queue)
     {
         Yii::info("importing feed {$this->path}...", __METHOD__);
-        $this->importFeed($this->path);
+        $this->importFeed($this->path, $this->batchSize);
         Yii::info("done", __METHOD__);
     }
 
     /**
      * @param string $path
+     * @param int $batchSize
      * @throws InvalidConfigException
      * @throws JsonException
      */
-    protected function importFeed(string $path): void
+    protected function importFeed(string $path, int $batchSize): void
+    {
+        $parser = $this->getFeedParser($path);
+
+        $itemsCount = 0;
+        $jobsCount = 0;
+
+        $batch = [];
+        foreach ($parser->getItems() as $itemDto) {
+            ++$itemsCount;
+
+            if (count($batch) >= $batchSize) {
+                ++$jobsCount;
+                $this->pushImportJob($batch);
+                $batch = [];
+            }
+
+            $batch[] = $itemDto;
+        }
+
+        if ($batch) {
+            ++$jobsCount;
+            $this->pushImportJob($batch);
+        }
+
+        Yii::debug("created {$jobsCount} jobs to import {$itemsCount} items", __METHOD__);
+    }
+
+    /**
+     * @param string $path
+     * @return FeedParser
+     * @throws InvalidConfigException
+     */
+    protected function getFeedParser(string $path): FeedParser
     {
         $storage = $this->getStorage();
         $data = $storage->read($path);
@@ -53,15 +90,18 @@ class FeedImportJob implements JobInterface
 
         $parser = new FeedParser();
         $parser->setData($data);
+        return $parser;
+    }
 
-        $itemsCount = 0;
-        foreach ($parser->getItems() as $itemDto) {
-            $job = new ItemJob();
-            $job->itemDto = $itemDto;
-            $this->getQueue()->push($job);
-            ++$itemsCount;
-        }
-        Yii::debug("created {$itemsCount} jobs to import items", __METHOD__);
+    /**
+     * @param ItemDto[] $batch
+     * @throws InvalidConfigException
+     */
+    protected function pushImportJob(array $batch): void
+    {
+        $job = new BatchItemJob();
+        $job->items = $batch;
+        $this->getQueue()->push($job);
     }
 
     /**

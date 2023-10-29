@@ -69,7 +69,7 @@ class PornstarSearch extends Model
             'query' => $query,
             'sort' => [
                 'defaultOrder' => [
-                    'id' => SORT_DESC,
+                    'id' => SORT_ASC,
                 ],
             ]
         ]);

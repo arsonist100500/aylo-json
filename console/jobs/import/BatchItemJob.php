@@ -7,7 +7,7 @@ use common\models\feed\item\ItemThumbnailDto;
 use common\models\Image;
 use common\models\Pornstar;
 use common\models\Hash;
-use console\jobs\CacheImageJob;
+use console\jobs\BatchCacheImageJob;
 use JsonException;
 use Throwable;
 use Yii;
@@ -18,12 +18,14 @@ use yii\helpers\ArrayHelper;
 use yii\queue\JobInterface;
 use yii\queue\Queue;
 
-class ItemJob implements JobInterface
+class BatchItemJob implements JobInterface
 {
-    /** @var ItemDto */
-    public ItemDto $itemDto;
+    /** @var ItemDto[] */
+    public array $items;
     /** @var string|array|Queue */
     public $queueImageCache = 'queueImageCache';
+    /** @var int */
+    public int $batchSize = 10;
 
     /**
      * @param Queue $queue
@@ -33,18 +35,47 @@ class ItemJob implements JobInterface
      */
     public function execute($queue)
     {
-        Yii::info("importing item id {$this->itemDto->id}...", __METHOD__);
-        $this->importItem($this->itemDto);
+        if (empty($this->items)) {
+            return;
+        }
+
+        $count = count($this->items);
+        $firstId = reset($this->items)->id;
+        $lastId = end($this->items)->id;
+        Yii::info("importing {$count} items (id: {$firstId}..{$lastId})", __METHOD__);
+
+        /** @var array<string,ItemDto> $items */
+        $items = ArrayHelper::index($this->items, fn (ItemDto $dto) => $this->getItemHash($dto));
+        /** @var string[] $hashes */
+        $hashes = array_keys($items);
+        /** @var string[] $existingHashes */
+        $existingHashes = Pornstar::find()
+            ->select('hash')
+            ->where([
+                'hash' => $hashes,
+            ])
+            ->column();
+
+        $new = array_diff($hashes, $existingHashes);
+
+        $imageIds = [];
+        foreach ($new as $hash) {
+            $item = $items[$hash];
+            $model = $this->importItem($item);
+            $ids = $this->saveImages($model, $item->getThumbnails());
+            array_push($imageIds, ...$ids);
+        }
+        $this->cacheImages($imageIds, $this->batchSize);
+
         Yii::info("done", __METHOD__);
     }
 
     /**
      * @param ItemDto $dto
+     * @return Pornstar
      * @throws JsonException
-     * @throws StaleObjectException
-     * @throws Throwable
      */
-    protected function importItem(ItemDto $dto): void
+    protected function importItem(ItemDto $dto): Pornstar
     {
         /** @var Pornstar|null $model */
         $model = Pornstar::findOne(['id' => $dto->id]);
@@ -61,14 +92,7 @@ class ItemJob implements JobInterface
         }
 
         $model->save(false);
-
-        $imageIds = $this->importImages($model, $dto->getThumbnails());
-        $queue = $this->getImageCacheQueue();
-        foreach ($imageIds as $id) {
-            $job = new CacheImageJob();
-            $job->imageId = $id;
-            $queue->push($job);
-        }
+        return $model;
     }
 
     /**
@@ -96,7 +120,7 @@ class ItemJob implements JobInterface
      * @throws StaleObjectException
      * @throws Throwable
      */
-    protected function importImages(Pornstar $pornstar, array $thumbnails): array
+    protected function saveImages(Pornstar $pornstar, array $thumbnails): array
     {
         /** @var array<string,Image> $images */
         $images = ArrayHelper::index($pornstar->images, 'hash');
@@ -124,6 +148,48 @@ class ItemJob implements JobInterface
             $imageIds[] = $image->id;
         }
         return $imageIds;
+    }
+
+    /**
+     * @param int[] $ids
+     * @param int $batchSize
+     * @throws InvalidConfigException
+     */
+    protected function cacheImages(array $ids, int $batchSize): void
+    {
+        $imagesCount = 0;
+        $jobsCount = 0;
+
+        $batch = [];
+        foreach ($ids as $id) {
+            ++$imagesCount;
+
+            if (count($batch) >= $batchSize) {
+                ++$jobsCount;
+                $this->pushCacheImageJob($batch);
+                $batch = [];
+            }
+
+            $batch[] = $id;
+        }
+
+        if ($batch) {
+            ++$jobsCount;
+            $this->pushCacheImageJob($batch);
+        }
+
+        Yii::debug("created {$jobsCount} jobs to cache {$imagesCount} images", __METHOD__);
+    }
+
+    /**
+     * @param array $ids
+     * @throws InvalidConfigException
+     */
+    protected function pushCacheImageJob(array $ids): void
+    {
+        $job = new BatchCacheImageJob();
+        $job->ids = $ids;
+        $this->getImageCacheQueue()->push($job);
     }
 
     /**

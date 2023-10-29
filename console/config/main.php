@@ -3,8 +3,8 @@
 use yii\caching\FileCache;
 use yii\log\FileTarget;
 use yii\mutex\FileMutex;
-use yii\queue\file\Queue;
 use yii\queue\LogBehavior;
+use yii\queue\redis\Queue;
 
 $config = [
     'id' => 'console',
@@ -38,19 +38,31 @@ $config = [
         'mutex' => [
             'class' => FileMutex::class,
         ],
+        'redis' => [
+            'class' => yii\redis\Connection::class,
+            'hostname' => '172.21.0.4',
+            'database' => 0,
+
+            // retry connecting after connection has timed out
+            // yiisoft/yii2-redis >=2.0.7 is required for this.
+            'retries' => 1,
+        ],
         'queueDownload' => [
-            'class' => Queue::class, // todo redis
-            'path' => '@runtime/queue/download',
+            'class' => Queue::class,
+            'redis' => 'redis',
+            'channel' => 'queueDownload',
             'as log' => LogBehavior::class,
         ],
         'queueImport' => [
-            'class' => Queue::class, // todo redis
-            'path' => '@runtime/queue/import',
+            'class' => Queue::class,
+            'redis' => 'redis',
+            'channel' => 'queueImport',
             'as log' => LogBehavior::class,
         ],
         'queueImageCache' => [
-            'class' => Queue::class, // todo redis
-            'path' => '@runtime/queue/imageCache',
+            'class' => Queue::class,
+            'redis' => 'redis',
+            'channel' => 'queueImageCache',
             'as log' => LogBehavior::class,
         ],
     ],
