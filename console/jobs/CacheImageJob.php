@@ -5,6 +5,8 @@ namespace console\jobs;
 use common\models\FileSystemStorage;
 use common\models\Image;
 use common\models\StorageInterface;
+use common\models\WebStorage;
+use creocoder\flysystem\LocalFilesystem;
 use RuntimeException;
 use Yii;
 use yii\base\InvalidConfigException;
@@ -19,8 +21,8 @@ class CacheImageJob implements JobInterface
 {
     /** @var int */
     public int $imageId;
-    /** @var string */
-    public string $storage = FileSystemStorage::class;
+    /** @var string|array|StorageInterface */
+    public $storage = WebStorage::class;
 
     /**
      * @param Queue $queue

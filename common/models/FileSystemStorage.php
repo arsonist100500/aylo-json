@@ -4,10 +4,13 @@ namespace common\models;
 
 use creocoder\flysystem\Filesystem;
 use yii\base\InvalidConfigException;
+use yii\base\StaticInstanceTrait;
 use yii\di\Instance;
 
 class FileSystemStorage implements StorageInterface
 {
+    use StaticInstanceTrait;
+
     /**
      * @var string|array|Filesystem
      */

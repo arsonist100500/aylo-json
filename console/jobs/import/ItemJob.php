@@ -79,13 +79,11 @@ class ItemJob implements JobInterface
     protected function getItemHash(ItemDto $dto): string
     {
         $aliases = $dto->getAliases();
-        $thumbnails = $dto->getThumbnails();
         sort($aliases);
-        ArrayHelper::multisort($thumbnails, ['type', 'height', 'width'], [SORT_ASC, SORT_ASC, SORT_ASC]);
 
         $data = $dto->toArray();
         $data['aliases'] = $aliases;
-        $data['thumbnails'] = $thumbnails;
+        unset($data['thumbnails']);
 
         $dataAsString = json_encode($data, JSON_THROW_ON_ERROR);
         return Hash::instance()->calculate($dataAsString);

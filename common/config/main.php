@@ -1,12 +1,10 @@
 <?php
 
-use yii\debug\Module as DebugModule;
-use yii\gii\Module as GiiModule;
-
 $params = require __DIR__ . '/params.php';
 $db = require __DIR__ . '/db.php';
 
 $config = [
+    'name' => 'Aylo JSON',
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
         '@npm'   => '@vendor/npm-asset',
