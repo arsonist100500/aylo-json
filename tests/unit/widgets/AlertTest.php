@@ -2,7 +2,7 @@
 
 namespace tests\unit\widgets;
 
-use app\widgets\Alert;
+use backend\widgets\Alert;
 use Yii;
 
 class AlertTest extends \Codeception\Test\Unit

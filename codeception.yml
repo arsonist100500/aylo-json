@@ -23,5 +23,5 @@ modules:
 #        include:
 #            - models/*
 #            - controllers/*
-#            - commands/*
+#            - console/*
 #            - mail/*
