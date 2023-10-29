@@ -53,7 +53,10 @@ class FeedDownloadJob implements JobInterface
         }
 
         $storage = $this->getStorage();
-        $storage->put($path, $response->getContent());
+        $storage->write($path, $response->getContent());
+
+        $size = $storage->getSize($path);
+        Yii::info("size is {$size} bytes", __METHOD__);
     }
 
     /**

@@ -2,6 +2,9 @@
 
 use yii\caching\FileCache;
 use yii\log\FileTarget;
+use yii\mutex\FileMutex;
+use yii\queue\file\Queue;
+use yii\queue\LogBehavior;
 
 $config = [
     'id' => 'console',
@@ -13,6 +16,9 @@ $config = [
     ],
     'bootstrap' => [
         'log',
+        'queueDownload',
+        'queueImport',
+        'queueImageCache',
     ],
     'components' => [
         'cache' => [
@@ -28,6 +34,24 @@ $config = [
                     'maxFileSize' => 1024,
                 ]
             ],
+        ],
+        'mutex' => [
+            'class' => FileMutex::class,
+        ],
+        'queueDownload' => [
+            'class' => Queue::class, // todo redis
+            'path' => '@runtime/queue/download',
+            'as log' => LogBehavior::class,
+        ],
+        'queueImport' => [
+            'class' => Queue::class, // todo redis
+            'path' => '@runtime/queue/import',
+            'as log' => LogBehavior::class,
+        ],
+        'queueImageCache' => [
+            'class' => Queue::class, // todo redis
+            'path' => '@runtime/queue/imageCache',
+            'as log' => LogBehavior::class,
         ],
     ],
     /*

@@ -14,12 +14,18 @@ interface StorageInterface
      * @param string $id
      * @return mixed
      */
-    public function get(string $id);
+    public function read(string $id);
 
     /**
      * @param string $id
      * @param string|mixed $data
      * @return bool
      */
-    public function put(string $id, $data): bool;
+    public function write(string $id, $data): bool;
+
+    /**
+     * @param string $id
+     * @return int
+     */
+    public function getSize(string $id): int;
 }

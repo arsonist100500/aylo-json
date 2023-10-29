@@ -28,9 +28,19 @@ class FileSystemStorage implements StorageInterface
      * @return false|mixed|string
      * @throws InvalidConfigException
      */
-    public function get(string $id)
+    public function read(string $id)
     {
         return $this->getFs()->read($id);
+    }
+
+    /**
+     * @param string $id
+     * @return int
+     * @throws InvalidConfigException
+     */
+    public function getSize(string $id): int
+    {
+        return $this->getFs()->getSize($id);
     }
 
     /**
@@ -39,7 +49,7 @@ class FileSystemStorage implements StorageInterface
      * @return bool
      * @throws InvalidConfigException
      */
-    public function put(string $id, $data): bool
+    public function write(string $id, $data): bool
     {
         return $this->getFs()->put($id, $data);
     }

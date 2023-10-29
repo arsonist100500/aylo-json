@@ -48,7 +48,7 @@ class FeedImportJob implements JobInterface
     protected function importFeed(string $path): void
     {
         $storage = $this->getStorage();
-        $data = $storage->get($path);
+        $data = $storage->read($path);
 
         if (empty($data)) {
             throw new RuntimeException('Empty feed');
