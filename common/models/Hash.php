@@ -4,10 +4,13 @@ namespace common\models;
 
 use Exception;
 use Yii;
+use yii\base\StaticInstanceTrait;
 use yii\helpers\ArrayHelper;
 
 class Hash
 {
+    use StaticInstanceTrait;
+
     /** @var string|null */
     protected ?string $secret = null;
 
