@@ -2,14 +2,28 @@
 
 namespace console\controllers;
 
+use common\models\FeedSettings;
+use console\jobs\FeedDownloadJob;
 use yii\console\Controller;
 use yii\console\ExitCode;
 
 class DownloadController extends Controller
 {
-    public function actionFeed(string $url = 'http://localhost:8000/feed/feed100.json')
+    /**
+     * @return int
+     * @throws \yii\base\InvalidConfigException
+     * @throws \yii\httpclient\Exception
+     */
+    public function actionFeed()
     {
-        echo $url . "\n";
+        $settings = FeedSettings::instance();
+
+        $job = new FeedDownloadJob();
+        $job->url = $settings->getUrl();
+        $job->path = $settings->getFilePath();
+
+        $job->execute(null); // todo push to the queue
+
         return ExitCode::OK;
     }
 }

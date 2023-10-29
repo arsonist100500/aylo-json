@@ -1,11 +1,7 @@
 <?php
 
-use app\models\User;
-use yii\caching\FileCache;
 use yii\debug\Module as DebugModule;
 use yii\gii\Module as GiiModule;
-use yii\log\FileTarget;
-use yii\symfonymailer\Mailer;
 
 $params = require __DIR__ . '/params.php';
 $db = require __DIR__ . '/db.php';
@@ -17,6 +13,10 @@ $config = [
     ],
     'vendorPath' => dirname(__DIR__, 2) . '/vendor',
     'components' => [
+        'fs' => [
+            'class' => creocoder\flysystem\LocalFilesystem::class,
+            'path' => '@storage',
+        ],
         'db' => $db,
     ],
     'params' => $params,
