@@ -14,7 +14,7 @@ class m231028_161616_create_table_pornstar extends Migration
     {
         $this->createTable(self::TABLE_NAME, [
             'id' => $this->primaryKey(),
-            'hash' => $this->string(40)->notNull(),
+            'hash' => $this->string(64)->notNull(),
             'name' => $this->string()->notNull(),
             'aliases' => $this->json()->notNull()->defaultValue('[]'),
             'license' => $this->string(16)->notNull(),

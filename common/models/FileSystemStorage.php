@@ -25,12 +25,12 @@ class FileSystemStorage implements StorageInterface
 
     /**
      * @param string $id
-     * @return \League\Flysystem\Handler|mixed
+     * @return false|mixed|string
      * @throws InvalidConfigException
      */
     public function get(string $id)
     {
-        return $this->getFs()->get($id);
+        return $this->getFs()->read($id);
     }
 
     /**

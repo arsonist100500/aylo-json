@@ -2,6 +2,7 @@
 
 namespace common\models;
 
+use yii\behaviors\TimestampBehavior;
 use yii\db\ActiveQuery;
 use yii\db\ActiveRecord;
 
@@ -13,6 +14,16 @@ class Image extends ActiveRecord
     public static function tableName(): string
     {
         return 'image';
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function behaviors(): array
+    {
+        return [
+            ['class' => TimestampBehavior::class],
+        ];
     }
 
     /**

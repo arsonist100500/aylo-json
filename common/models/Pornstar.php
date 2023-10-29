@@ -2,6 +2,8 @@
 
 namespace common\models;
 
+use common\models\feed\item\ItemDto;
+use yii\behaviors\TimestampBehavior;
 use yii\db\ActiveQuery;
 use yii\db\ActiveRecord;
 
@@ -23,11 +25,22 @@ use yii\db\ActiveRecord;
 class Pornstar extends ActiveRecord
 {
     /**
+     * @inheritdoc
      * @return string
      */
     public static function tableName(): string
     {
         return 'pornstar';
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function behaviors(): array
+    {
+        return [
+            ['class' => TimestampBehavior::class],
+        ];
     }
 
     /**
@@ -37,5 +50,26 @@ class Pornstar extends ActiveRecord
     {
         return $this->hasMany(Image::class, ['pornstar_id' => 'id'])
             ->inverseOf('pornstar');
+    }
+
+    /**
+     * @param ItemDto $dto
+     * @return static
+     */
+    public function loadFromDto(ItemDto $dto): static
+    {
+        $this->name = $dto->name;
+        $this->license = $dto->license;
+        $this->wlStatus = $dto->wlStatus;
+        $this->link = $dto->link;
+        $this->aliases = $dto->getAliases();
+
+        $attributes = $dto->getAttributes()?->toArray();
+        unset($attributes['stats']);
+        $this->attributes = $attributes;
+
+        $this->stats = $dto->getAttributes()?->getStats();
+
+        return $this;
     }
 }

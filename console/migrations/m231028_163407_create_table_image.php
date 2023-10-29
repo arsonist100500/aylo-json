@@ -15,7 +15,7 @@ class m231028_163407_create_table_image extends Migration
         $this->createTable(self::TABLE_NAME, [
             'id' => $this->primaryKey(),
             'pornstar_id' => $this->integer()->notNull(),
-            'hash' => $this->string(40)->notNull(),
+            'hash' => $this->string(64)->notNull(),
             'types' => $this->json()->notNull()->defaultValue('[]'),
             'url' => $this->string()->notNull(),
             'cached' => $this->string(),

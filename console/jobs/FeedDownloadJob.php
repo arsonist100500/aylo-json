@@ -29,7 +29,7 @@ class FeedDownloadJob implements JobInterface
      */
     public function execute($queue)
     {
-        Yii::info("Downloading {$this->url}...", __METHOD__);
+        Yii::info("downloading {$this->url}...", __METHOD__);
         $this->download($this->url, $this->path);
         Yii::info("done", __METHOD__);
     }

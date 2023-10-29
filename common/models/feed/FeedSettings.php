@@ -1,6 +1,6 @@
 <?php
 
-namespace common\models;
+namespace common\models\feed;
 
 use Exception;
 use Yii;
