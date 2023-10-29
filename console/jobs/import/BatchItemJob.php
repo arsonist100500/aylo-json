@@ -48,23 +48,37 @@ class BatchItemJob implements JobInterface
         $items = ArrayHelper::index($this->items, fn (ItemDto $dto) => $this->getItemHash($dto));
         /** @var string[] $hashes */
         $hashes = array_keys($items);
-        /** @var string[] $existingHashes */
-        $existingHashes = Pornstar::find()
-            ->select('hash')
+
+        /** @var Pornstar[] $pornstars */
+        $pornstars = Pornstar::find()
             ->where([
                 'hash' => $hashes,
             ])
-            ->column();
+            ->indexBy('hash')
+            ->all();
 
-        $new = array_diff($hashes, $existingHashes);
+        /** @var string[] $existingHashes */
+        $existingHashes = array_keys($pornstars);
+
+        $newHashes = array_diff($hashes, $existingHashes);
 
         $imageIds = [];
-        foreach ($new as $hash) {
+
+        // Import new items & update changed items
+        foreach ($newHashes as $hash) {
             $item = $items[$hash];
             $model = $this->importItem($item);
             $ids = $this->saveImages($model, $item->getThumbnails());
             array_push($imageIds, ...$ids);
         }
+
+        // Import images for existing (unchanged) items
+        foreach ($pornstars as $hash => $model) {
+            $item = $items[$hash];
+            $ids = $this->saveImages($model, $item->getThumbnails());
+            array_push($imageIds, ...$ids);
+        }
+
         $this->cacheImages($imageIds, $this->batchSize);
 
         Yii::info("done", __METHOD__);
