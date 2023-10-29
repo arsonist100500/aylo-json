@@ -4,7 +4,7 @@ namespace console\controllers;
 
 use common\models\feed\FeedSettings;
 use console\jobs\FeedDownloadJob;
-use console\jobs\FeedImportJob;
+use console\jobs\import\FeedImportJob;
 use yii\base\InvalidConfigException;
 use yii\console\Controller;
 use yii\console\ExitCode;

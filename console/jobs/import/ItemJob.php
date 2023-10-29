@@ -1,17 +1,14 @@
 <?php
 
-namespace console\jobs;
+namespace console\jobs\import;
 
-use common\models\feed\FeedParser;
 use common\models\feed\item\ItemDto;
 use common\models\feed\item\ItemThumbnailDto;
-use common\models\FileSystemStorage;
 use common\models\Image;
 use common\models\Pornstar;
 use common\models\Hash;
-use common\models\StorageInterface;
+use console\jobs\CacheImageJob;
 use JsonException;
-use RuntimeException;
 use Throwable;
 use Yii;
 use yii\base\InvalidConfigException;
@@ -21,53 +18,31 @@ use yii\helpers\ArrayHelper;
 use yii\queue\JobInterface;
 use yii\queue\Queue;
 
-class FeedImportJob implements JobInterface
+class ItemJob implements JobInterface
 {
-    /** @var string */
-    public string $path;
-    /** @var string */
-    public string $storage = FileSystemStorage::class;
+    /** @var ItemDto */
+    public ItemDto $itemDto;
+    /** @var string|array|Queue */
+    public $queueImageCache = 'queueImageCache';
 
     /**
      * @param Queue $queue
-     * @throws InvalidConfigException
      * @throws JsonException
+     * @throws StaleObjectException
+     * @throws Throwable
      */
     public function execute($queue)
     {
-        Yii::info("importing feed {$this->path}...", __METHOD__);
-        $this->importFeed($this->path);
+        Yii::info("importing item id {$this->itemDto->id}...", __METHOD__);
+        $this->importItem($this->itemDto);
         Yii::info("done", __METHOD__);
-    }
-
-    /**
-     * @param string $path
-     * @throws InvalidConfigException
-     * @throws JsonException
-     */
-    protected function importFeed(string $path): void
-    {
-        $storage = $this->getStorage();
-        $data = $storage->read($path);
-
-        if (empty($data)) {
-            throw new RuntimeException('Empty feed');
-        }
-
-        $size = strlen($data);
-        Yii::debug("size: {$size} bytes", __METHOD__);
-
-        $parser = new FeedParser();
-        $parser->setData($data);
-        foreach ($parser->getItems() as $itemDto) {
-            Yii::debug("importing item id {$itemDto->id}", __METHOD__);
-            $this->importItem($itemDto);
-        }
     }
 
     /**
      * @param ItemDto $dto
      * @throws JsonException
+     * @throws StaleObjectException
+     * @throws Throwable
      */
     protected function importItem(ItemDto $dto): void
     {
@@ -87,7 +62,13 @@ class FeedImportJob implements JobInterface
 
         $model->save(false);
 
-        $this->importImages($model, $dto->getThumbnails());
+        $imageIds = $this->importImages($model, $dto->getThumbnails());
+        $queue = $this->getImageCacheQueue();
+        foreach ($imageIds as $id) {
+            $job = new CacheImageJob();
+            $job->imageId = $id;
+            $queue->push($job);
+        }
     }
 
     /**
@@ -113,10 +94,11 @@ class FeedImportJob implements JobInterface
     /**
      * @param Pornstar $pornstar
      * @param ItemThumbnailDto[] $thumbnails
-     * @throws Throwable
+     * @return int[] Returns array of created image IDs.
      * @throws StaleObjectException
+     * @throws Throwable
      */
-    protected function importImages(Pornstar $pornstar, array $thumbnails): void
+    protected function importImages(Pornstar $pornstar, array $thumbnails): array
     {
         /** @var array<string,Image> $images */
         $images = ArrayHelper::index($pornstar->images, 'hash');
@@ -134,12 +116,16 @@ class FeedImportJob implements JobInterface
             $image->delete();
         }
 
+        $imageIds = [];
         foreach ($new as $hash) {
             $items = $thumbnailsByHash[$hash];
             $types = ArrayHelper::getColumn($items, 'type');
             $first = reset($items);
-            $this->importImage($pornstar->id, $hash, $types, $first->getFirstUrl());
+            $image = $this->createImage($pornstar->id, $hash, $types, $first->getFirstUrl());
+            $image->save(false);
+            $imageIds[] = $image->id;
         }
+        return $imageIds;
     }
 
     /**
@@ -158,23 +144,27 @@ class FeedImportJob implements JobInterface
      * @param string $hash
      * @param array $types
      * @param string $url
+     * @return Image
      */
-    protected function importImage(int $pornstarId, string $hash, array $types, string $url): void
+    protected function createImage(int $pornstarId, string $hash, array $types, string $url): Image
     {
         $image = new Image();
         $image->pornstar_id = $pornstarId;
         $image->hash = $hash;
         $image->types = $types;
         $image->url = $url;
-        $image->save(false);
+        return $image;
     }
 
     /**
-     * @return StorageInterface|object
+     * @return Queue
      * @throws InvalidConfigException
      */
-    protected function getStorage(): StorageInterface
+    protected function getImageCacheQueue(): Queue
     {
-        return Instance::ensure($this->storage, StorageInterface::class);
+        if ($this->queueImageCache instanceof Queue === false) {
+            $this->queueImageCache = Instance::ensure($this->queueImageCache, Queue::class);
+        }
+        return $this->queueImageCache;
     }
 }

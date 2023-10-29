@@ -44,4 +44,14 @@ class Image extends ActiveRecord
         return $this->hasOne(Pornstar::class, ['id' => 'pornstar_id'])
             ->inverseOf('images');
     }
+
+    /**
+     * @return string
+     */
+    public function getCachePath(): string
+    {
+        $path = parse_url($this->url, PHP_URL_PATH);
+        $extension = pathinfo($path, PATHINFO_EXTENSION);
+        return 'images/' . $this->hash . '.' .$extension;
+    }
 }
