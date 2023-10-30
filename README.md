@@ -45,6 +45,17 @@ Items will be extracted from the feed and saved into the database.
 Simultaneously, the image caching process will start (there are 16 workers for this job).
 It will take some time to download all the images (thumbnails) into the local cache.
 
+The time needed to finish all the jobs depends on the feed size and network conditions.
+For the original JSON feed, which has about 21k items and 15k unique thumbnail URLs,
+the estimated time is about 11 minutes.
+
+You can use the following command to estimate the image caching progress:
+
+```shell
+docker exec -it aylo_php /app/yii queue-image-cache | egrep waiting
+```
+
+
 To see which jobs are run, use the following command:
 ```shell
 docker logs aylo_php --tail 100 -f
