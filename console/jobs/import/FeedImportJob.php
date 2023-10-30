@@ -17,11 +17,18 @@ class FeedImportJob implements JobInterface
     /** @var string */
     public string $path;
     /** @var int */
-    public int $batchSize = 50;
+    public int $batchSize = 500;
+    /** @var int Approximate amount of seconds after which the job will be restarted */
+    public int $ttl = 30;
+    /** @var int Amount of items to skip */
+    public int $skippedItems = 0;
     /** @var string */
     public string $storage = FileSystemStorage::class;
     /** @var string|array|Queue */
     public $queue = 'queueImport';
+
+    /** @var int */
+    protected int $startedAt;
 
     /**
      * @param Queue $queue
@@ -29,41 +36,64 @@ class FeedImportJob implements JobInterface
      */
     public function execute($queue)
     {
-        Yii::info("importing feed {$this->path}...", __METHOD__);
-        $this->importFeed($this->path, $this->batchSize);
+        $this->startedAt = time();
+        Yii::info("importing feed {$this->path}, skipped items = {$this->skippedItems}", __METHOD__);
+        $this->importFeed($this->path, $this->skippedItems, $this->batchSize);
         Yii::info("done", __METHOD__);
     }
 
     /**
      * @param string $path
+     * @param int $skippedItems
      * @param int $batchSize
      * @throws InvalidConfigException
      */
-    protected function importFeed(string $path, int $batchSize): void
+    protected function importFeed(string $path, int $skippedItems, int $batchSize): void
     {
         $parser = $this->getFeedParser($path);
+        $parser->setSkippedItemsCount($skippedItems);
 
         $itemsCount = 0;
         $jobsCount = 0;
 
         do {
-            $generator = $parser->getItems($batchSize);
-            if ($generator->valid() === false) {
+            $batch = $this->getItemsBatch($parser, $batchSize);
+            if (empty($batch)) {
                 break;
             }
 
-            $batch = [];
-            foreach ($generator as $item) {
-                /** @var ItemDto $item */
-                $batch[] = $item;
-            }
-            $itemsCount += count($batch);
-
-            ++$jobsCount;
             $this->pushImportJob($batch);
-        } while (true);
+            $itemsCount += count($batch);
+            ++$jobsCount;
+            Yii::debug("total jobs: {$jobsCount}, total items: {$itemsCount}", __METHOD__);
 
-        Yii::debug("created {$jobsCount} jobs to import {$itemsCount} items", __METHOD__);
+            if ($itemsCount > 0 && $this->isTimeout()) {
+                // Restart the job to prevent exceeding the process ttl.
+                $job = clone $this;
+                $job->skippedItems += $itemsCount;
+                $this->getQueue()->push($job);
+                return;
+            }
+        } while (true);
+    }
+
+    /**
+     * @param FeedParser $parser
+     * @param int $batchSize
+     * @return ItemDto[]
+     */
+    protected function getItemsBatch(FeedParser $parser, int $batchSize): array
+    {
+        $generator = $parser->getItems($batchSize);
+        if ($generator->valid() === false) {
+            return [];
+        }
+
+        $batch = [];
+        foreach ($generator as $item) {
+            $batch[] = $item;
+        }
+        return $batch;
     }
 
     /**
@@ -92,6 +122,20 @@ class FeedImportJob implements JobInterface
     }
 
     /**
+     * @return bool
+     */
+    protected function isTimeout(): bool
+    {
+        $elapsed = time() - $this->startedAt;
+        Yii::debug("time elapsed: {$elapsed} seconds");
+        if ($elapsed > $this->ttl) {
+            Yii::info('timeout');
+            return true;
+        }
+        return false;
+    }
+
+        /**
      * @return StorageInterface|object
      * @throws InvalidConfigException
      */

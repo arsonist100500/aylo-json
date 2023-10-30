@@ -31,6 +31,16 @@ class FeedParser
     protected int $skipped = 0;
 
     /**
+     * @param int $value
+     * @return static
+     */
+    public function setSkippedItemsCount(int $value): static
+    {
+        $this->processedItemsCount = max($value, 0);
+        return $this;
+    }
+
+    /**
      * @return Generator|ItemDto[]
      */
     public function getItems(int $batchSize = 100)
