@@ -29,15 +29,27 @@ docker-compose up -d
 
 ## Feed downloading & importing
 
-This command will start feed downloading:
+This command will start feed downloading process:
 ```shell
 docker exec -it aylo_php /app/yii feed/download
 ```
 
 After the feed is downloaded, the import process will begin automatically.
-Items receifvrom the feed will be saved into the database.
-Simultaneously, image caching process will start (there are 16 workers for this job).
+If it didn't, please run the following command to start the importing process:
+
+```shell
+docker exec -it aylo_php /app/yii feed/import
+```
+
+Items will be extracted from the feed and saved into the database.
+Simultaneously, the image caching process will start (there are 16 workers for this job).
 It will take some time to download all the images (thumbnails) into the local cache.
+
+To see which jobs are run, use the following command:
+```shell
+docker logs aylo_php --tail 100 -f
+## (Ctrl+C) to stop watching
+```
 
 ## Web app
 
