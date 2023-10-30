@@ -18,6 +18,12 @@ interface StorageInterface
 
     /**
      * @param string $id
+     * @return mixed
+     */
+    public function readStream(string $id);
+
+    /**
+     * @param string $id
      * @param string|mixed $data
      * @return bool
      */

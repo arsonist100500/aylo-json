@@ -6,8 +6,6 @@ use common\models\feed\FeedParser;
 use common\models\feed\item\ItemDto;
 use common\models\FileSystemStorage;
 use common\models\StorageInterface;
-use JsonException;
-use RuntimeException;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\di\Instance;
@@ -28,7 +26,6 @@ class FeedImportJob implements JobInterface
     /**
      * @param Queue $queue
      * @throws InvalidConfigException
-     * @throws JsonException
      */
     public function execute($queue)
     {
@@ -41,7 +38,6 @@ class FeedImportJob implements JobInterface
      * @param string $path
      * @param int $batchSize
      * @throws InvalidConfigException
-     * @throws JsonException
      */
     protected function importFeed(string $path, int $batchSize): void
     {
@@ -50,23 +46,22 @@ class FeedImportJob implements JobInterface
         $itemsCount = 0;
         $jobsCount = 0;
 
-        $batch = [];
-        foreach ($parser->getItems() as $itemDto) {
-            ++$itemsCount;
-
-            if (count($batch) >= $batchSize) {
-                ++$jobsCount;
-                $this->pushImportJob($batch);
-                $batch = [];
+        do {
+            $generator = $parser->getItems($batchSize);
+            if ($generator->valid() === false) {
+                break;
             }
 
-            $batch[] = $itemDto;
-        }
+            $batch = [];
+            foreach ($generator as $item) {
+                /** @var ItemDto $item */
+                $batch[] = $item;
+            }
+            $itemsCount += count($batch);
 
-        if ($batch) {
             ++$jobsCount;
             $this->pushImportJob($batch);
-        }
+        } while (true);
 
         Yii::debug("created {$jobsCount} jobs to import {$itemsCount} items", __METHOD__);
     }
@@ -79,17 +74,9 @@ class FeedImportJob implements JobInterface
     protected function getFeedParser(string $path): FeedParser
     {
         $storage = $this->getStorage();
-        $data = $storage->read($path);
-
-        if (empty($data)) {
-            throw new RuntimeException('Empty feed');
-        }
-
-        $size = strlen($data);
-        Yii::debug("size: {$size} bytes", __METHOD__);
-
+        $stream = $storage->readStream($path);
         $parser = new FeedParser();
-        $parser->setData($data);
+        $parser->setStream($stream);
         return $parser;
     }
 

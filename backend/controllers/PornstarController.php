@@ -71,5 +71,4 @@ class PornstarController extends Controller
 
         return $model;
     }
-
 }

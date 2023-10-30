@@ -23,7 +23,8 @@
         "kartik-v/yii2-widget-select2": "2.2.5",
         "ext-pdo": "*",
         "rmrevin/yii2-fontawesome": "3.7.0",
-        "yiisoft/yii2-redis": "2.0.18"
+        "yiisoft/yii2-redis": "2.0.18",
+        "salsify/json-streaming-parser": "8.3.1"
     },
     "require-dev": {
         "yiisoft/yii2-debug": "~2.1.0",

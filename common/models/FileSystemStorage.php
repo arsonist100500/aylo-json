@@ -38,6 +38,16 @@ class FileSystemStorage implements StorageInterface
 
     /**
      * @param string $id
+     * @return false|mixed|resource
+     * @throws InvalidConfigException
+     */
+    public function readStream(string $id)
+    {
+        return $this->getFs()->readStream($id);
+    }
+
+    /**
+     * @param string $id
      * @return int
      * @throws InvalidConfigException
      */

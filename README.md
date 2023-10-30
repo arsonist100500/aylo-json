@@ -17,16 +17,28 @@ Please ensure all code is tested before sending it back, it would be good to als
 The code base should be provided as a zip package or git repository url.
 Ideally, the application must be deployable using Docker, otherwise we cannot guarantee the successful run of the application.
 
-# Install & run
+## Installing
 
-```
+```shell
 docker-compose down
-docker volume create --name=postgres-aylo
+docker volume create --name=postgres_data
 docker-compose run --rm php composer install
 docker-compose run --rm php /app/yii migrate --interactive=0
 docker-compose up -d
 ```
 
-# Usage
+## Feed downloading & importing
+
+This command will start feed downloading:
+```shell
+docker exec -it aylo_php /app/yii feed/download
+```
+
+After the feed is downloaded, the import process will begin automatically.
+Items receifvrom the feed will be saved into the database.
+Simultaneously, image caching process will start (there are 16 workers for this job).
+It will take some time to download all the images (thumbnails) into the local cache.
+
+## Web app
 
 App is available on local port 8000: [http://localhost:8000/](http://localhost:8000/).
